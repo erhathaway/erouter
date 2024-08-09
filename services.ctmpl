@@ -1,0 +1,43 @@
+[
+  {{- range services -}}
+  {{- $service := . -}}
+  {{- range service .Name }}
+  {
+    "name": "{{ .Name }}",
+    "address": "{{ .Address }}",
+    "port": {{ .Port }},
+    "protocol": "{{ with .Tags | contains "protocol" }}{{ index . 0 | trimPrefix "protocol=" }}{{ else }}http{{ end }}",
+    "tags": {
+      {{- with $service.Tags | contains "exact=" -}}
+        {{- $exact := index . 0 | trimPrefix "exact=" -}}
+        "exact": [{{ range $i, $e := split $exact "," }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}],
+      {{- end }}
+      {{- with $service.Tags | contains "prefix=" -}}
+        {{- $prefix := index . 0 | trimPrefix "prefix=" -}}
+        "prefix": [{{ range $i, $e := split $prefix "," }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}],
+      {{- end }}
+      {{- with $service.Tags | contains "auth=" -}}
+        "auth": "{{ index . 0 | trimPrefix "auth=" }}",
+      {{- end }}
+      {{- with $service.Tags | contains "error=" -}}
+        "error": {
+          {{- $errors := index . 0 | trimPrefix "error=" -}}
+          {{- range $i, $e := split $errors ";" -}}
+            {{- $parts := split $e ":" -}}
+            {{- if $i }},{{ end }}
+            "{{ index $parts 0 }}": "{{ index $parts 1 }}"
+          {{- end -}}
+        },
+      {{- end }}
+      {{- with $service.Tags | contains "priority=" -}}
+        "priority": {{ index . 0 | trimPrefix "priority=" }},
+      {{- end }}
+      {{- with $service.Tags | contains "entryPoints=" -}}
+        {{- $entryPoints := index . 0 | trimPrefix "entryPoints=" -}}
+        "entryPoints": [{{ range $i, $e := split $entryPoints "," }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}]
+      {{- end }}
+    }
+  },
+  {{- end -}}
+  {{- end }}
+]

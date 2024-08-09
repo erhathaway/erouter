@@ -1,0 +1,16 @@
+{
+  "name": "erouter",
+  "version": "0.1.0",
+  "description": "A reverse proxy built with Bun",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "bun": "^1.1.22",
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {}
+}

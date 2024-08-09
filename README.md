@@ -1,2 +1,155 @@
-# erouter
-Efficient routing using Consul's service catalog
+# ERouter
+
+**Routing with Bun, Consul and Nomad**
+
+## ⚠️ Warning: Toy Repository
+
+This project is a toy implementation and is not intended for production use. It's designed for educational purposes and experimentation with reverse proxying concepts.
+
+## Description
+
+ERouter is a flexible, Bun-based reverse proxy designed to work seamlessly with Consul and Nomad environments. It serves as a practical playground for understanding the intricacies of reverse proxying, service discovery, and dynamic routing in microservices architectures.
+
+This project aims to provide hands-on experience with concepts often encountered in production-grade service meshes and API gateways, but in a simplified, easy-to-understand format.
+
+## Features
+
+- Multi-protocol support (HTTP, HTTPS, WebSocket, Secure WebSocket)
+- Dynamic service discovery via Consul
+- Flexible routing based on exact matches, prefixes, and priorities
+- Entry point concept for fine-grained traffic control
+- Forward authentication
+- Custom error handling and redirection
+- Rate limiting
+- API key validation
+- Input validation for basic security
+- Request tracing with unique request IDs
+- Dynamic configuration updates without restart
+
+## Architecture
+
+ERouter is built with a modular architecture, separating concerns for better maintainability and extensibility:
+
+1. **Entry Points**: Define how traffic enters the system, specifying ports, protocols, and optional path prefixes.
+
+2. **Service Discovery**: Utilizes Consul for dynamic service registration and discovery. Consul Template is used to keep the service list up-to-date.
+
+3. **Routing**: Implements a flexible routing system based on exact matches, prefixes, and priorities. Services can be associated with specific entry points.
+
+4. **Proxying**: Handles the actual forwarding of requests to the appropriate backend services for both HTTP(S) and WebSocket protocols.
+
+5. **Security**: Implements basic security measures like API key validation, rate limiting, and input validation.
+
+6. **Error Handling**: Provides custom error handling and redirection capabilities based on HTTP status codes.
+
+7. **Configuration**: Uses environment variables and a configuration file for easy setup and modification.
+
+The main components are:
+
+- `src/index.ts`: The entry point that sets up servers for each defined entry point.
+- `src/config.ts`: Centralizes configuration management.
+- `src/entryPoints.ts`: Manages entry point definitions and lookup.
+- `src/services.ts`: Handles service discovery and selection.
+- `src/security.ts`: Implements security-related functions.
+- `src/proxy/http.ts` and `src/proxy/websocket.ts`: Handle proxying for HTTP(S) and WebSocket protocols respectively.
+
+## Getting Started
+
+1. Ensure you have [Bun](https://bun.sh/) installed.
+2. Clone this repository.
+3. Run `bun install` to install dependencies.
+4. Set up your `.env` file with necessary configurations.
+5. Ensure Consul is running and properly configured.
+6. Run Consul Template to generate the `services.json` file.
+7. Start the proxy with `bun run start`.
+
+## Setting up ERouter with Consul
+
+This section provides a step-by-step guide on how to set up and use ERouter with Consul.
+
+### 1. Install and Configure Consul
+
+First, [install Consul](https://developer.hashicorp.com/consul/) on your system. 
+
+### 2. Register Services in Consul
+
+For each service you want to route through ERouter, you need to register it with Consul. Here's an example of registering a service using Consul's HTTP API:
+
+```bash
+curl -X PUT -d '{
+  "ID": "web-app-1",
+  "Name": "web-app",
+  "Address": "localhost",
+  "Port": 8080,
+  "Tags": [
+    "protocol=http",
+    "entryPoints=main",
+    "prefix=/app",
+    "priority=10"
+  ],
+  "Check": {
+    "HTTP": "http://localhost:8080/health",
+    "Interval": "10s"
+  }
+}' http://localhost:8500/v1/agent/service/register
+```
+
+This registers a service named "web-app" with various tags that ERouter will use for routing.
+
+### 3. Set up Consul Template
+
+Install [Consul Template](https://github.com/hashicorp/consul-template). The `services.ctmpl` file is already included in the ERouter repository, so you don't need to create it.
+
+Use the provided `consul-template.hcl` file in the repository to run Consul Template:
+
+```bash
+consul-template -config=consul-template.hcl
+```
+
+This will generate the `services.json` file that ERouter uses for routing decisions.
+
+### 4. Configure ERouter
+
+Create a `.env` file in your ERouter project directory:
+
+```env
+API_KEY=your-secret-api-key
+SSL_KEY=./path/to/your/key.pem
+SSL_CERT=./path/to/your/cert.pem
+SERVICES_FILE=./services.json
+ENTRY_POINTS=[{"name":"main","ports":[80,443],"protocols":["http","https"]}]
+```
+
+### 5. Run ERouter
+
+Now you can start ERouter:
+
+```bash
+bun run start
+```
+
+ERouter will now use the `services.json` file generated by Consul Template for routing decisions. When services are registered, deregistered, or updated in Consul, Consul Template will automatically update the `services.json` file, and ERouter will reload its configuration.
+
+## Testing the Setup
+
+To test your setup:
+
+1. Register a test service in Consul (as shown in step 2).
+2. Make a request to ERouter targeting the registered service:
+
+```bash
+curl -H "X-API-Key: your-secret-api-key" http://localhost/app/test
+```
+
+ERouter should route this request to your registered service based on the prefix "/app".
+
+Remember to adjust hostnames, ports, and paths according to your specific setup.
+
+
+## Contributing
+
+As this is a toy project for learning purposes, feel free to experiment, extend, and modify the code. If you come up with interesting extensions or improvements, we encourage you to share them!
+
+## License
+
+This project is open-source and available under the MIT License.
